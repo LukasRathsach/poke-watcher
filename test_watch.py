@@ -46,7 +46,7 @@ def test_pack_count():
 
 
 def test_matched_set():
-    assert matched_set("Pokémon rivals booster pokemonkort", ["rivals", "151"]) == "Rivals"
+    assert matched_set("Pokémon rivals booster pokemonkort", ["rivals", "151"]) == "rivals"
     assert matched_set("Pokémon 151 Mini Tin", ["rivals", "151"]) == "151"
     assert matched_set("Pokémon Booster Bundle", ["rivals"]) is None
 

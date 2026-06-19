@@ -13,9 +13,11 @@ def _kr(v):
     return f"{int(v)} kr" if float(v).is_integer() else f"{v:.2f} kr"
 
 
-def notify(webhook, *, name, retailer, url, set_name, price, packs, exact_packs, when):
+def notify(webhook, *, name, retailer, url, set_name, price, packs, exact_packs, when,
+           mentions=None):
+    mentions = mentions or []
     fields = [
-        {"name": "Sæt", "value": set_name or "—", "inline": True},
+        {"name": "Sæt", "value": (set_name or "—").title(), "inline": True},
         {"name": "Butik", "value": retailer, "inline": True},
         {"name": "Pris", "value": _kr(price), "inline": True},
     ]
@@ -26,6 +28,8 @@ def notify(webhook, *, name, retailer, url, set_name, price, packs, exact_packs,
                        "value": f"{prefix}{per} kr ({packs} pk)", "inline": True})
     payload = {
         "username": "Poké Watcher",
+        "content": " ".join(f"<@{u}>" for u in mentions) or None,
+        "allowed_mentions": {"parse": [], "users": mentions},  # only ping these users
         "embeds": [{
             "title": name,
             "url": url,
@@ -35,6 +39,14 @@ def notify(webhook, *, name, retailer, url, set_name, price, packs, exact_packs,
         }],
     }
     requests.post(webhook, timeout=15, json=payload).raise_for_status()
+
+
+def send_text(webhook, text):
+    """Plain channel message (command confirmations). Never pings roles/@everyone."""
+    requests.post(webhook, timeout=15, json={
+        "username": "Poké Watcher", "content": text,
+        "allowed_mentions": {"parse": ["users"]},
+    }).raise_for_status()
 
 
 if __name__ == "__main__":

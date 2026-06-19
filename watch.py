@@ -10,13 +10,15 @@ import re
 
 import yaml
 
-from notify import notify
+import discord_read
+from notify import notify, send_text
 from sources import SOURCES
 
 ROOT = pathlib.Path(__file__).parent
 CONFIG = ROOT / "config.yaml"          # local (gitignored, holds webhook)
 CONFIG_FALLBACK = ROOT / "config.example.yaml"  # committed; used in CI
 STATE = ROOT / "state.json"
+SUBS = ROOT / "subscriptions.json"     # {"sets": {set: [user_id]}, "last_id": str}
 
 
 def _now_dk():
@@ -44,11 +46,12 @@ def matches(name, type_keywords, sets):
 
 
 def matched_set(name, sets):
-    """The wanted set token that this product belongs to, title-cased for display."""
+    """The wanted set token (as stored, lowercased) this product belongs to, else None.
+    Returned raw so subscriptions can be looked up by token; display title-cases it."""
     n = name.lower()
     for s in sets:
         if _hit([s], n):
-            return s.title()
+            return s
     return None
 
 
@@ -91,7 +94,25 @@ def transitions(prev_state, items):
 def run():
     cfg = yaml.safe_load((CONFIG if CONFIG.exists() else CONFIG_FALLBACK).read_text())
     webhook = os.environ.get("DISCORD_WEBHOOK") or cfg.get("discord_webhook")
-    sets = cfg.get("sets") or []
+
+    # read channel commands -> per-set subscriptions (friends typing "tag mig: <set>")
+    sub_data = json.loads(SUBS.read_text()) if SUBS.exists() else {}
+    subs = sub_data.get("sets", {})
+    bot_token = os.environ.get("DISCORD_BOT_TOKEN")
+    channel_id = os.environ.get("DISCORD_CHANNEL_ID")
+    if bot_token and channel_id:
+        try:
+            subs, last_id, replies = discord_read.poll(bot_token, channel_id, subs,
+                                                        sub_data.get("last_id"))
+            sub_data = {"sets": subs, "last_id": last_id}
+            SUBS.write_text(json.dumps(sub_data, ensure_ascii=False, indent=2))
+            for r in replies:
+                send_text(webhook, r)
+        except Exception as e:
+            print(f"[discord] command poll failed: {e}")
+
+    # effective sets = config sets + any set someone subscribed to in Discord
+    sets = list(dict.fromkeys((cfg.get("sets") or []) + list(subs.keys())))
     first_run = not STATE.exists()  # first ever run: seed baseline, don't ping
     prev = json.loads(STATE.read_text()) if STATE.exists() else {}
     state = dict(prev)  # start from prior; only successful fetches update it
@@ -116,10 +137,12 @@ def run():
     when = _now_dk().strftime("%d-%m-%Y %H:%M")
     for it in fired:
         packs, exact = pack_count(it["name"])
+        set_token = matched_set(it["name"], sets)
         try:
             notify(webhook, name=it["name"], retailer=it["retailer"], url=it["url"],
-                   set_name=matched_set(it["name"], sets), price=it.get("price"),
-                   packs=packs, exact_packs=exact, when=when)
+                   set_name=set_token, price=it.get("price"),
+                   packs=packs, exact_packs=exact, when=when,
+                   mentions=subs.get(set_token, []))
             print(f"NOTIFY: {it['name']} @ {it['retailer']}")
         except Exception as e:
             print(f"[notify] failed for {it['name']}: {e}")

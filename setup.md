@@ -24,6 +24,19 @@ Already wired up:
 > (2000/month free); a 15-min cron sits near that — make the repo public for
 > unlimited minutes if you ever run low.
 
+## Discord commands (subscribe to a set, get @mentioned)
+
+Anyone in the channel can type (set name is free text):
+
+- `tag mig: prismatic` (or `tag me prismatic`, `!track surging sparks`, `follow 151`)
+  — follow a set; you get @mentioned when a product from it restocks.
+- `stop tag: prismatic` (or `!untrack 151`) — unfollow.
+- `!sets` (or `!list`) — show what's currently followed.
+
+Commands are read each cycle (~15 min), so a new subscription takes effect within
+~15 min. Following a set also makes the watcher start tracking it. Needs the bot
+secrets set: `DISCORD_BOT_TOKEN`, `DISCORD_CHANNEL_ID` (see bot setup).
+
 ## Optional: also run locally via launchd
 
 Only runs while the Mac is on (asleep catches up on wake; off pauses it). Redundant

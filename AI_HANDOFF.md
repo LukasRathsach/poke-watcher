@@ -28,7 +28,12 @@ Runs on Lukas' Mac via launchd. No AI, no server, no paid services.
 - [x] Rich notification: set, product, price, price-per-pack (estimated by type), link, DK time
 - [x] **Cloud deploy: GitHub Actions cron** (~15 min) — runs without laptop; state via cache; webhook = repo secret
 
+- [x] Discord commands: friends type "tag mig: <set>" to follow a set + get @mentioned
+  on restock. Bot reads channel each cycle (discord_read.py); subs persist in cache.
+
 ### Pending
+- [ ] Add bot secrets `DISCORD_BOT_TOKEN` + `DISCORD_CHANNEL_ID` (Lukas creating the bot)
+- [ ] Live-test a command ("tag mig: prismatic") + a mention on restock
 - [ ] Confirm first cloud run seeds baseline + a later run pings on a real restock
 - [ ] (optional) Implement Coolshop source — JSON API exists (`POST /api/search`)
 - [ ] (optional) Proshop — needs a real browser (Playwright); currently 403-blocked
