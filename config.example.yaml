@@ -1,12 +1,16 @@
 # Copy to config.yaml and fill in during onboarding (step 0). config.yaml is gitignored.
 
-ntfy_topic: poke-stock-CHANGE-ME   # the topic name IS the secret — make it unguessable
+# Discord incoming webhook — the URL IS the secret, keep it out of git.
+# Create: channel → Edit Channel → Integrations → Webhooks → New Webhook → Copy URL
+discord_webhook: https://discord.com/api/webhooks/CHANGE/ME
+
 poll_interval_minutes: 12          # enforced by launchd, not a loop
 
 retailers:                         # enable/disable sources
-  salling: true                    # covers BR, Bilka, Føtex, Netto
-  proshop: true
-  coolshop: true
+  salling: true                    # Bilka + BR + Føtex (shared Algolia backend)
+  bogide: true                     # Bog & Idé (Shopify)
+  coolshop: false                  # JSON API exists, not implemented yet
+  proshop: false                   # bot-blocked (403), stub only
 
 # Match an item only if its name contains one of these (case-insensitive)
 type_keywords:

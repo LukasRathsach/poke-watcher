@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.lukas.pokewatcher</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/lukasrathsachlang/Desktop/Projects/Personal/poke-watcher/.venv/bin/python3</string>
+        <string>/Users/lukasrathsachlang/Desktop/Projects/Personal/poke-watcher/watch.py</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/lukasrathsachlang/Desktop/Projects/Personal/poke-watcher</string>
+
+    <key>StartInterval</key>
+    <integer>720</integer>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/lukasrathsachlang/Desktop/Projects/Personal/poke-watcher/watch.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/lukasrathsachlang/Desktop/Projects/Personal/poke-watcher/watch.log</string>
+</dict>
+</plist>
