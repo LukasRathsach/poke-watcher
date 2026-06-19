@@ -27,7 +27,13 @@ type_keywords:
   - tcg
 
 # PRIMARY filter: only ping for products from these sets. Empty = any sealed card product.
+# Use the broadest token that still identifies the set (e.g. "rivals" catches both
+# "Destined Rivals ETB" and "rivals booster"). Whole-word, case-insensitive.
 sets:
   - prismatic
   - "151"
   - ascended heroes
+  - surging sparks
+  - rivals
+  - paldean fates
+  - phantasmal
