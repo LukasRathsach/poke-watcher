@@ -1,0 +1,21 @@
+# Copy to config.yaml and fill in during onboarding (step 0). config.yaml is gitignored.
+
+ntfy_topic: poke-stock-CHANGE-ME   # the topic name IS the secret — make it unguessable
+poll_interval_minutes: 12          # enforced by launchd, not a loop
+
+retailers:                         # enable/disable sources
+  salling: true                    # covers BR, Bilka, Føtex, Netto
+  proshop: true
+  coolshop: true
+
+# Match an item only if its name contains one of these (case-insensitive)
+type_keywords:
+  - booster
+  - booster bundle
+  - display
+  - elite trainer box
+  - ETB
+
+# Optional: limit to specific sets. Empty = any product matching type_keywords.
+# Lukas fills these in later, e.g. "Prismatic Evolutions", "Surging Sparks".
+sets: []
