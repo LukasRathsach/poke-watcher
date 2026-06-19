@@ -12,14 +12,22 @@ retailers:                         # enable/disable sources
   coolshop: false                  # JSON API exists, not implemented yet
   proshop: false                   # bot-blocked (403), stub only
 
-# Match an item only if its name contains one of these (case-insensitive)
+# "Is it sealed card product?" guard (secondary to sets). Whole-word, case-insensitive.
 type_keywords:
   - booster
+  - booster box
   - booster bundle
-  - display
   - elite trainer box
   - ETB
+  - display
+  - tin
+  - blister
+  - premium collection
+  - collection box
+  - tcg
 
-# Optional: limit to specific sets. Empty = any product matching type_keywords.
-# Lukas fills these in later, e.g. "Prismatic Evolutions", "Surging Sparks".
-sets: []
+# PRIMARY filter: only ping for products from these sets. Empty = any sealed card product.
+sets:
+  - prismatic
+  - "151"
+  - ascended heroes

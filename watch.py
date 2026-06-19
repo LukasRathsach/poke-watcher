@@ -22,13 +22,13 @@ def _hit(words, text):
 
 
 def matches(name, type_keywords, sets):
-    """Keep an item if its name hits a type keyword AND (no sets given OR a set name)."""
+    """Set-first filter. When `sets` is given, the wanted set is the primary gate and
+    the product must also be sealed card product (type guard). With no sets, fall back
+    to matching any sealed card product. All matches are whole-word."""
     n = name.lower()
-    if not _hit(type_keywords, n):
-        return False
     if sets and not _hit(sets, n):
         return False
-    return True
+    return _hit(type_keywords, n)
 
 
 def transitions(prev_state, items):
