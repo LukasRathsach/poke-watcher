@@ -1,6 +1,6 @@
 """Self-check for the core notification logic: fire exactly on out->in, never twice.
 Run: python3 test_watch.py"""
-from watch import transitions, matches
+from watch import transitions, matches, pack_count, matched_set
 
 
 def item(rid, pid, in_stock, name="Pokémon Booster"):
@@ -33,7 +33,27 @@ def test_matches():
     assert not matches("Pokémon Booster Surging Sparks", kw, ["Prismatic Evolutions"])
 
 
+def test_pack_count():
+    # explicit count in name wins, marked exact
+    assert pack_count("Pokémon Stellar Crown blister 3-pak") == (3, True)
+    assert pack_count("Temporal Forces Triple Pack") == (3, True)
+    # type-based estimates, marked not-exact
+    assert pack_count("Pokémon Destined Rivals Elite Trainer Box") == (9, False)
+    assert pack_count("Pokémon Booster Bundle Phantasmal") == (6, False)
+    assert pack_count("Pokémon 151 Mini Tin") == (2, False)
+    assert pack_count("Pokémon TCG booster pack") == (1, False)
+    assert pack_count("Pokémon Prismatic Special Collection") == (None, False)
+
+
+def test_matched_set():
+    assert matched_set("Pokémon rivals booster pokemonkort", ["rivals", "151"]) == "Rivals"
+    assert matched_set("Pokémon 151 Mini Tin", ["rivals", "151"]) == "151"
+    assert matched_set("Pokémon Booster Bundle", ["rivals"]) is None
+
+
 if __name__ == "__main__":
     test_transitions()
     test_matches()
+    test_pack_count()
+    test_matched_set()
     print("ok")

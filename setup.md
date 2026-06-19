@@ -1,10 +1,33 @@
 # Poké Watcher — setup
 
 Free, fully automatic Pokémon restock watcher. Checks Bilka, BR, Føtex and
-Bog & Idé every 12 minutes and posts to a Discord channel the moment a sealed
-product (booster / display / ETB) flips from out-of-stock to in-stock.
+Bog & Idé every ~15 minutes and posts a Discord message the moment a product
+from a tracked set flips from out-of-stock to in-stock — with set, product,
+price, price-per-pack, direct link and time.
 
-No accounts, no API costs, no AI, no server — runs on your Mac via `launchd`.
+## How it runs — GitHub Actions (no laptop needed)
+
+The watcher runs in GitHub's cloud on a schedule (`.github/workflows/watch.yml`),
+so it works 24/7 without your Mac being on. Free.
+
+Already wired up:
+- Webhook stored as repo secret `DISCORD_WEBHOOK` (never in the code).
+- Stock state persists between runs via the Actions cache.
+- Sets/keywords/retailers live in `config.example.yaml` (committed).
+
+**To change which sets it tracks:** edit `sets:` in `config.example.yaml`, commit, push.
+**To run it on demand:** repo → Actions → "poke-watcher" → Run workflow.
+**Logs:** repo → Actions → pick a run.
+
+> Note: GitHub cron can be delayed or skipped under load — expect "within ~15-30 min",
+> not to-the-second. Fine for restocks. Private-repo Actions minutes are limited
+> (2000/month free); a 15-min cron sits near that — make the repo public for
+> unlimited minutes if you ever run low.
+
+## Optional: also run locally via launchd
+
+Only runs while the Mac is on (asleep catches up on wake; off pauses it). Redundant
+with the cloud job — skip unless you want a local copy.
 
 ## What's already done
 

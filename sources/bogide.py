@@ -35,11 +35,18 @@ def fetch(config):
             if pid in seen:  # collections overlap; keep one entry per product
                 continue
             seen.add(pid)
+            variants = p.get("variants", [])
+            chosen = next((v for v in variants if v.get("available")), variants[0] if variants else {})
+            try:
+                price = float(chosen.get("price"))
+            except (TypeError, ValueError):
+                price = None
             items.append({
                 "retailer": "Bog & Idé",
                 "product_id": pid,
                 "name": p.get("title", ""),
                 "url": f"{BASE}/products/{p.get('handle')}",
-                "in_stock": any(v.get("available") for v in p.get("variants", [])),
+                "in_stock": any(v.get("available") for v in variants),
+                "price": price,
             })
     return items

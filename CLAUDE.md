@@ -9,9 +9,14 @@ flips out-of-stock -> in-stock. No AI at runtime, no server.
 - No framework. Lazy / shortest-working-diff (ponytail).
 
 ## Deployment
-- Runs on Lukas' Mac via `launchd` (`com.lukas.pokewatcher.plist`, StartInterval 720s).
-- **Secrets:** Discord webhook lives in `config.yaml` (gitignored). No cloud, no env-var dashboard.
-- `state.json` (gitignored) holds last-seen stock; auto-created. First run seeds baseline silently.
+- **Primary: GitHub Actions** (`.github/workflows/watch.yml`) — cron ~every 15 min in
+  GitHub's cloud. Runs with no laptop. Webhook is repo secret `DISCORD_WEBHOOK`.
+  State persists across runs via `actions/cache` (no commit spam). In CI there is no
+  `config.yaml`, so watch.py reads `config.example.yaml` — **edit sets there + push** to
+  change what the cloud watcher tracks.
+- Optional local: `launchd` (`com.lukas.pokewatcher.plist`) — only runs while the Mac is on.
+- **Secrets:** webhook = env `DISCORD_WEBHOOK` (CI) or `discord_webhook` in `config.yaml` (local, gitignored).
+- `state.json` (gitignored) holds last-seen stock; first run seeds baseline silently.
 
 ## Run / test
 - `.venv/bin/python watch.py` — one poll cycle.

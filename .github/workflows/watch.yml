@@ -1,0 +1,43 @@
+name: poke-watcher
+
+on:
+  schedule:
+    # ~every 15 min, off the top of the hour (GitHub delays/skips on-the-hour crons)
+    - cron: "7,22,37,52 * * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: poke-watcher
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install requests pyyaml tzdata
+
+      # carry last-seen stock state across runs (no commit spam)
+      - name: Restore state
+        uses: actions/cache/restore@v4
+        with:
+          path: state.json
+          key: pokewatcher-state-${{ github.run_id }}
+          restore-keys: pokewatcher-state-
+
+      - name: Poll
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: python watch.py
+
+      - name: Save state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: state.json
+          key: pokewatcher-state-${{ github.run_id }}

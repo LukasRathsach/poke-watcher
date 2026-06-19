@@ -1,6 +1,6 @@
 # AI Handoff — Poké Watcher
 
-Last updated: 2026-06-19
+Last updated: 2026-06-20
 
 ## Purpose
 Free, fully automatic Pokémon restock notifier for Danish retailers. Posts to a
@@ -23,12 +23,17 @@ Runs on Lukas' Mac via launchd. No AI, no server, no paid services.
 - [x] launchd plist + setup.md
 - [x] GitHub repo (private): github.com/LukasRathsach/poke-watcher
 
+- [x] Set-first filtering; tracking 7 sought-after sets (Prismatic, 151, Ascended
+  Heroes, Surging Sparks, Destined Rivals, Paldean Fates, Phantasmal)
+- [x] Rich notification: set, product, price, price-per-pack (estimated by type), link, DK time
+- [x] **Cloud deploy: GitHub Actions cron** (~15 min) — runs without laptop; state via cache; webhook = repo secret
+
 ### Pending
-- [ ] Install launchd job on Lukas' Mac (he runs the 3 commands in setup.md)
-- [ ] Confirm real restock ping lands once a sealed product actually restocks
+- [ ] Confirm first cloud run seeds baseline + a later run pings on a real restock
 - [ ] (optional) Implement Coolshop source — JSON API exists (`POST /api/search`)
 - [ ] (optional) Proshop — needs a real browser (Playwright); currently 403-blocked
-- [ ] (optional) Fill `sets:` in config.yaml to narrow to specific sets
+- [ ] (optional) Add "Pitch Black" (= JP Abyss Eye) set token once it launches in EN
+- [ ] (optional) Refine pack-count estimates per set if box sizes differ from SV defaults
 
 ## Decisions
 - ntfy -> Discord webhook (Lukas' choice, simpler, free).

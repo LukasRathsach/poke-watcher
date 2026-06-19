@@ -52,5 +52,6 @@ def fetch(config):
                 "name": h.get("name", ""),
                 "url": url,
                 "in_stock": bool(h.get("is_in_stock_online")),
+                "price": h.get("sales_price"),  # DKK, float
             })
     return items

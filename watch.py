@@ -1,8 +1,10 @@
 """One poll cycle: fetch enabled sources, filter to Pokémon items, and push a
 Discord message for every product that just went out-of-stock -> in-stock.
 
-Run by launchd every ~12 min. No loop here, no AI, no server."""
+Run on a schedule (GitHub Actions cron, or launchd). No loop, no AI, no server."""
+import datetime
 import json
+import os
 import pathlib
 import re
 
@@ -12,8 +14,18 @@ from notify import notify
 from sources import SOURCES
 
 ROOT = pathlib.Path(__file__).parent
-CONFIG = ROOT / "config.yaml"
+CONFIG = ROOT / "config.yaml"          # local (gitignored, holds webhook)
+CONFIG_FALLBACK = ROOT / "config.example.yaml"  # committed; used in CI
 STATE = ROOT / "state.json"
+
+
+def _now_dk():
+    # CI runners are UTC; show Danish wall-clock time in the notification
+    try:
+        from zoneinfo import ZoneInfo
+        return datetime.datetime.now(ZoneInfo("Europe/Copenhagen"))
+    except Exception:
+        return datetime.datetime.now()
 
 
 def _hit(words, text):
@@ -31,6 +43,41 @@ def matches(name, type_keywords, sets):
     return _hit(type_keywords, n)
 
 
+def matched_set(name, sets):
+    """The wanted set token that this product belongs to, title-cased for display."""
+    n = name.lower()
+    for s in sets:
+        if _hit([s], n):
+            return s.title()
+    return None
+
+
+def pack_count(name):
+    """(packs, exact). Booster packs in the product. exact=True when the name states
+    a count; False when estimated from the product type (ETB/bundle/box/tin defaults).
+    ponytail: SV-era defaults — tweak if a set's box sizes differ."""
+    n = name.lower()
+    m = re.search(r"(\d+)\s*-?\s*(?:pak|pack|pakke)\b", n)
+    if m:
+        return int(m.group(1)), True
+    for w, v in (("triple", 3), ("double", 2), ("single", 1)):
+        if re.search(rf"\b{w}\s+pack\b", n):
+            return v, True
+    if "booster box" in n:
+        return 36, False
+    if "booster bundle" in n:
+        return 6, False
+    if re.search(r"\belite trainer box\b|\betb\b", n):
+        return 9, False
+    if "blister" in n:
+        return 3, False
+    if "mini tin" in n or re.search(r"\btin\b", n):
+        return 2, False
+    if re.search(r"\bbooster\b", n):
+        return 1, False
+    return None, False
+
+
 def transitions(prev_state, items):
     """Pure: items that are in stock now and were absent/out-of-stock before."""
     fired = []
@@ -42,7 +89,9 @@ def transitions(prev_state, items):
 
 
 def run():
-    cfg = yaml.safe_load(CONFIG.read_text())
+    cfg = yaml.safe_load((CONFIG if CONFIG.exists() else CONFIG_FALLBACK).read_text())
+    webhook = os.environ.get("DISCORD_WEBHOOK") or cfg.get("discord_webhook")
+    sets = cfg.get("sets") or []
     first_run = not STATE.exists()  # first ever run: seed baseline, don't ping
     prev = json.loads(STATE.read_text()) if STATE.exists() else {}
     state = dict(prev)  # start from prior; only successful fetches update it
@@ -57,16 +106,20 @@ def run():
             print(f"[{name}] fetch failed: {e}")
             continue
         kept = [it for it in fetched
-                if matches(it["name"], cfg["type_keywords"], cfg.get("sets") or [])]
+                if matches(it["name"], cfg["type_keywords"], sets)]
         items += kept
         # update state only for what this (successful) source actually returned
         for it in kept:
             state[f"{it['retailer']}:{it['product_id']}"] = it["in_stock"]
 
     fired = [] if first_run else transitions(prev, items)
+    when = _now_dk().strftime("%d-%m-%Y %H:%M")
     for it in fired:
+        packs, exact = pack_count(it["name"])
         try:
-            notify(cfg["discord_webhook"], it["name"], it["retailer"], it["url"])
+            notify(webhook, name=it["name"], retailer=it["retailer"], url=it["url"],
+                   set_name=matched_set(it["name"], sets), price=it.get("price"),
+                   packs=packs, exact_packs=exact, when=when)
             print(f"NOTIFY: {it['name']} @ {it['retailer']}")
         except Exception as e:
             print(f"[notify] failed for {it['name']}: {e}")
