@@ -48,5 +48,6 @@ def fetch(config):
                 "url": f"{BASE}/products/{p.get('handle')}",
                 "in_stock": any(v.get("available") for v in variants),
                 "price": price,
+                "stores_count": None,  # Shopify gives no per-store data
             })
     return items

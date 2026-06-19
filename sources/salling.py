@@ -53,5 +53,6 @@ def fetch(config):
                 "url": url,
                 "in_stock": bool(h.get("is_in_stock_online")),
                 "price": h.get("sales_price"),  # DKK, float
+                "stores_count": h.get("in_stock_stores_count") or 0,  # physical stores with stock
             })
     return items

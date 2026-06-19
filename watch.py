@@ -142,7 +142,7 @@ def run():
             notify(webhook, name=it["name"], retailer=it["retailer"], url=it["url"],
                    set_name=set_token, price=it.get("price"),
                    packs=packs, exact_packs=exact, when=when,
-                   mentions=subs.get(set_token, []))
+                   mentions=subs.get(set_token, []), stores_count=it.get("stores_count"))
             print(f"NOTIFY: {it['name']} @ {it['retailer']}")
         except Exception as e:
             print(f"[notify] failed for {it['name']}: {e}")

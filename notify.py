@@ -14,7 +14,7 @@ def _kr(v):
 
 
 def notify(webhook, *, name, retailer, url, set_name, price, packs, exact_packs, when,
-           mentions=None):
+           mentions=None, stores_count=None):
     mentions = mentions or []
     fields = [
         {"name": "Sæt", "value": (set_name or "—").title(), "inline": True},
@@ -26,6 +26,10 @@ def notify(webhook, *, name, retailer, url, set_name, price, packs, exact_packs,
         per = int(round(price / packs))
         fields.append({"name": "Pris pr. pakke",
                        "value": f"{prefix}{per} kr ({packs} pk)", "inline": True})
+    if stores_count is not None:  # None = retailer gives no per-store data (Bog & Idé)
+        butik = "butik" if stores_count == 1 else "butikker"
+        v = f"✅ {stores_count} {butik}" if stores_count else "❌ kun online"
+        fields.append({"name": "🏬 Fysisk", "value": v, "inline": True})
     payload = {
         "username": "Poké Watcher",
         "content": " ".join(f"<@{u}>" for u in mentions) or None,
