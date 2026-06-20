@@ -2,8 +2,8 @@ name: poke-watcher
 
 on:
   schedule:
-    # ~every 15 min, off the top of the hour (GitHub delays/skips on-the-hour crons)
-    - cron: "7,22,37,52 * * * *"
+    # every 5 min — GitHub's scheduled-cron floor (and often still delayed under load)
+    - cron: "*/5 * * * *"
   workflow_dispatch: {}
 
 concurrency:
