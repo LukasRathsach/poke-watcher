@@ -10,15 +10,14 @@ import re
 
 import yaml
 
-import discord_read
-from notify import notify, send_text
+import store
+from notify import notify
 from sources import SOURCES
 
 ROOT = pathlib.Path(__file__).parent
 CONFIG = ROOT / "config.yaml"          # local (gitignored, holds webhook)
 CONFIG_FALLBACK = ROOT / "config.example.yaml"  # committed; used in CI
 STATE = ROOT / "state.json"
-SUBS = ROOT / "subscriptions.json"     # {"sets": {set: [user_id]}, "last_id": str}
 
 
 def _now_dk():
@@ -95,23 +94,14 @@ def run():
     cfg = yaml.safe_load((CONFIG if CONFIG.exists() else CONFIG_FALLBACK).read_text())
     webhook = os.environ.get("DISCORD_WEBHOOK") or cfg.get("discord_webhook")
 
-    # read channel commands -> per-set subscriptions (friends typing "tag mig: <set>")
-    sub_data = json.loads(SUBS.read_text()) if SUBS.exists() else {}
-    subs = sub_data.get("sets", {})
-    bot_token = os.environ.get("DISCORD_BOT_TOKEN")
-    channel_id = os.environ.get("DISCORD_CHANNEL_ID")
-    if bot_token and channel_id:
-        try:
-            subs, last_id, replies = discord_read.poll(bot_token, channel_id, subs,
-                                                        sub_data.get("last_id"))
-            sub_data = {"sets": subs, "last_id": last_id}
-            SUBS.write_text(json.dumps(sub_data, ensure_ascii=False, indent=2))
-            for r in replies:
-                send_text(webhook, r)
-        except Exception as e:
-            print(f"[discord] command poll failed: {e}")
+    # per-set subscriptions come from Supabase (written by the /track slash command)
+    try:
+        subs = store.load_subscriptions()
+    except Exception as e:
+        print(f"[store] subscription load failed: {e}")
+        subs = {}
 
-    # effective sets = config sets + any set someone subscribed to in Discord
+    # effective sets = config sets + any set someone subscribed to via /track
     sets = list(dict.fromkeys((cfg.get("sets") or []) + list(subs.keys())))
     first_run = not STATE.exists()  # first ever run: seed baseline, don't ping
     prev = json.loads(STATE.read_text()) if STATE.exists() else {}

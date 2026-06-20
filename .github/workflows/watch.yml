@@ -22,28 +22,24 @@ jobs:
 
       - run: pip install requests pyyaml tzdata
 
-      # carry stock state + command subscriptions across runs (no commit spam)
+      # carry last-seen stock state across runs (subscriptions live in Supabase)
       - name: Restore state
         uses: actions/cache/restore@v4
         with:
-          path: |
-            state.json
-            subscriptions.json
+          path: state.json
           key: pokewatcher-state-${{ github.run_id }}
           restore-keys: pokewatcher-state-
 
       - name: Poll
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
-          DISCORD_CHANNEL_ID: ${{ secrets.DISCORD_CHANNEL_ID }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: python watch.py
 
       - name: Save state
         if: always()
         uses: actions/cache/save@v4
         with:
-          path: |
-            state.json
-            subscriptions.json
+          path: state.json
           key: pokewatcher-state-${{ github.run_id }}
