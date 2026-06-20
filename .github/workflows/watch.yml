@@ -27,7 +27,9 @@ jobs:
       - name: Restore state
         uses: actions/cache/restore@v4
         with:
-          path: state.json
+          path: |
+            state.json
+            health.json
           key: pokewatcher-state-${{ github.run_id }}
           restore-keys: pokewatcher-state-
 
@@ -47,5 +49,7 @@ jobs:
         if: always()
         uses: actions/cache/save@v4
         with:
-          path: state.json
+          path: |
+            state.json
+            health.json
           key: pokewatcher-state-${{ github.run_id }}

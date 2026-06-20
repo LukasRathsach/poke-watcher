@@ -1,6 +1,7 @@
 config.yaml
 state.json
 subscriptions.json
+health.json
 __pycache__/
 *.pyc
 .venv/

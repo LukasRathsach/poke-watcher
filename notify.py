@@ -49,6 +49,14 @@ def notify(webhook, *, name, retailer, url, set_name, price, packs, exact_packs,
     requests.post(webhook, timeout=15, json=payload).raise_for_status()
 
 
+def alert(webhook, text):
+    """Plain system message (heartbeat health alerts). Never pings anyone."""
+    requests.post(webhook, timeout=15, json={
+        "username": "Poké Watcher", "avatar_url": AVATAR, "content": text,
+        "allowed_mentions": {"parse": []},
+    }).raise_for_status()
+
+
 if __name__ == "__main__":
     # Manual test push: python3 notify.py
     import os, yaml, pathlib, datetime

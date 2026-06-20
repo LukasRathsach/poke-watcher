@@ -11,13 +11,15 @@ import re
 import yaml
 
 import store
-from notify import notify
+from notify import notify, alert
 from sources import SOURCES
 
 ROOT = pathlib.Path(__file__).parent
 CONFIG = ROOT / "config.yaml"          # local (gitignored, holds webhook)
 CONFIG_FALLBACK = ROOT / "config.example.yaml"  # committed; used in CI
 STATE = ROOT / "state.json"
+HEALTH = ROOT / "health.json"          # heartbeat: per-source fail streak + alerted flag
+HEALTH_THRESHOLD = 3                   # consecutive bad cycles before alerting
 
 
 def _now_dk():
@@ -80,6 +82,23 @@ def pack_count(name):
     return None, False
 
 
+def check_health(health, name, ok, send):
+    """Heartbeat: alert once when a source has failed HEALTH_THRESHOLD cycles in a row
+    (0 products or an error — almost always a rotated key / changed endpoint), and once
+    when it recovers. `send` is a callable(text). Mutates `health` in place."""
+    h = health.setdefault(name, {"fails": 0, "alerted": False})
+    if ok:
+        if h["alerted"]:
+            send(f"✅ Poké Watcher: kilden **{name}** virker igen.")
+        h["fails"], h["alerted"] = 0, False
+    else:
+        h["fails"] += 1
+        if h["fails"] >= HEALTH_THRESHOLD and not h["alerted"]:
+            send(f"⚠️ Poké Watcher: kilden **{name}** har fejlet {h['fails']} cyklusser i "
+                 f"træk (0 produkter eller fejl). Tjek om endpoint/nøgle er ændret.")
+            h["alerted"] = True
+
+
 def transitions(prev_state, items):
     """Pure: items that are in stock now and were absent/out-of-stock before."""
     fired = []
@@ -93,6 +112,8 @@ def transitions(prev_state, items):
 def run():
     cfg = yaml.safe_load((CONFIG if CONFIG.exists() else CONFIG_FALLBACK).read_text())
     webhook = os.environ.get("DISCORD_WEBHOOK") or cfg.get("discord_webhook")
+    heartbeat_hook = os.environ.get("HEARTBEAT_WEBHOOK") or webhook  # private channel if set
+    health = json.loads(HEALTH.read_text()) if HEALTH.exists() else {}
 
     # per-set subscriptions come from Supabase (written by the /track slash command)
     try:
@@ -113,9 +134,14 @@ def run():
             continue
         try:
             fetched = SOURCES[name].fetch(cfg)
+            ok = len(fetched) > 0  # 0 products = almost certainly a broken source
         except Exception as e:  # a failing source never kills the cycle
             print(f"[{name}] fetch failed: {e}")
-            continue
+            fetched, ok = [], False
+        try:
+            check_health(health, name, ok, lambda t: alert(heartbeat_hook, t))
+        except Exception as e:
+            print(f"[heartbeat] {name}: {e}")
         kept = [it for it in fetched
                 if matches(it["name"], cfg["type_keywords"], sets)]
         items += kept
@@ -138,6 +164,7 @@ def run():
             print(f"[notify] failed for {it['name']}: {e}")
 
     STATE.write_text(json.dumps(state, ensure_ascii=False, indent=2))
+    HEALTH.write_text(json.dumps(health, ensure_ascii=False, indent=2))
     tag = " (baseline seeded, no pings)" if first_run else ""
     print(f"cycle done: {len(items)} matched items, {len(state)} tracked{tag}")
 

@@ -1,6 +1,6 @@
 """Self-check for the core notification logic: fire exactly on out->in, never twice.
 Run: python3 test_watch.py"""
-from watch import transitions, matches, pack_count, matched_set
+from watch import transitions, matches, pack_count, matched_set, check_health, HEALTH_THRESHOLD
 
 
 def item(rid, pid, in_stock, name="Pokémon Booster"):
@@ -51,9 +51,27 @@ def test_matched_set():
     assert matched_set("Pokémon Booster Bundle", ["rivals"]) is None
 
 
+def test_check_health():
+    sent, health = [], {}
+    send = sent.append
+    # no alert before the threshold
+    for _ in range(HEALTH_THRESHOLD - 1):
+        check_health(health, "salling", False, send)
+    assert sent == []
+    # alert exactly once at the threshold, not again while still down
+    check_health(health, "salling", False, send)
+    check_health(health, "salling", False, send)
+    assert len(sent) == 1 and "fejlet" in sent[0]
+    # recovery sends one "virker igen" and resets
+    check_health(health, "salling", True, send)
+    assert len(sent) == 2 and "virker igen" in sent[1]
+    assert health["salling"] == {"fails": 0, "alerted": False}
+
+
 if __name__ == "__main__":
     test_transitions()
     test_matches()
     test_pack_count()
     test_matched_set()
+    test_check_health()
     print("ok")
