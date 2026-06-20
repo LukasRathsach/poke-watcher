@@ -5,6 +5,9 @@ a direct link (the embed title), and when the restock was detected."""
 import requests
 
 GREEN = 0x2ECC71
+# Bot avatar so webhook messages match the bot's identity. ponytail: hardcoded —
+# if you change the bot's avatar in the Developer Portal, update this URL (the hash changes).
+AVATAR = "https://cdn.discordapp.com/avatars/1517676403452285009/28081988e7fa18c1d4ebacf907413ba8.png?size=256"
 
 
 def _kr(v):
@@ -32,6 +35,7 @@ def notify(webhook, *, name, retailer, url, set_name, price, packs, exact_packs,
         fields.append({"name": "🏬 Fysisk", "value": v, "inline": True})
     payload = {
         "username": "Poké Watcher",
+        "avatar_url": AVATAR,
         "content": " ".join(f"<@{u}>" for u in mentions) or None,
         "allowed_mentions": {"parse": [], "users": mentions},  # only ping these users
         "embeds": [{
@@ -43,14 +47,6 @@ def notify(webhook, *, name, retailer, url, set_name, price, packs, exact_packs,
         }],
     }
     requests.post(webhook, timeout=15, json=payload).raise_for_status()
-
-
-def send_text(webhook, text):
-    """Plain channel message (command confirmations). Never pings roles/@everyone."""
-    requests.post(webhook, timeout=15, json={
-        "username": "Poké Watcher", "content": text,
-        "allowed_mentions": {"parse": ["users"]},
-    }).raise_for_status()
 
 
 if __name__ == "__main__":
