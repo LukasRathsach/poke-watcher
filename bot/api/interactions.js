@@ -116,66 +116,20 @@ export default async function handler(req, res) {
     });
   }
 
-  if (i.type === InteractionType.APPLICATION_COMMAND_AUTOCOMPLETE) {
-    const focused = (i.data.options?.find((o) => o.focused)?.value || "").toLowerCase();
-    const sets = await allSets();
-    const choices = sets
-      .filter((s) => s.label.toLowerCase().includes(focused) || s.token.includes(focused))
-      .slice(0, 25)
-      .map((s) => ({ name: s.label, value: s.token }));
-    return res.json({
-      type: InteractionResponseType.APPLICATION_COMMAND_AUTOCOMPLETE_RESULT,
-      data: { choices },
-    });
-  }
-
-  if (i.type === InteractionType.APPLICATION_COMMAND) {
-    const name = i.data.name;
-    const uid = userId(i);
-    const arg = (n) => i.data.options?.find((o) => o.name === n)?.value;
-
+  if (i.type === InteractionType.APPLICATION_COMMAND && i.data.name === "sets") {
     // /sets -> interactive click-to-toggle picker, pre-checked with the user's picks
-    if (name === "sets") {
-      const sets = await allSets();
-      if (!sets.length) return res.json(ephemeral("Ingen sæt registreret endnu."));
-      const selected = await userSets(uid);
-      return res.json({
-        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-        data: {
-          content: "Vælg de sæt du vil følge — du bliver tagget når de kommer på lager:",
-          flags: 64,
-          components: [pickerRow(sets, selected)],
-        },
-      });
-    }
-
-    if (name === "track") {
-      const token = (arg("set") || "").toLowerCase().trim();
-      if (!token) return res.json(ephemeral("Angiv et sæt."));
-      await sb("pokewatcher_subscriptions", {
-        method: "POST",
-        headers: { Prefer: "resolution=ignore-duplicates" },
-        body: JSON.stringify({ set_token: token, user_id: uid }),
-      });
-      return res.json(ephemeral(`✅ Du følger nu **${token}** — du bliver tagget når det kommer på lager.`));
-    }
-
-    if (name === "untrack") {
-      const token = (arg("set") || "").toLowerCase().trim();
-      await sb(`pokewatcher_subscriptions?set_token=eq.${encodeURIComponent(token)}&user_id=eq.${uid}`, {
-        method: "DELETE",
-      });
-      return res.json(ephemeral(`Du følger ikke længere **${token}**.`));
-    }
-
-    if (name === "mysets") {
-      const mine = await userSets(uid);
-      return res.json(ephemeral(
-        mine.length ? "Du følger: " + mine.map((x) => `**${x}**`).join(", ")
-                    : "Du følger ingen sæt endnu. Brug `/sets`."));
-    }
-
-    return res.json(ephemeral("Ukendt kommando."));
+    const uid = userId(i);
+    const sets = await allSets();
+    if (!sets.length) return res.json(ephemeral("Ingen sæt registreret endnu."));
+    const selected = await userSets(uid);
+    return res.json({
+      type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+      data: {
+        content: "Vælg de sæt du vil følge — du bliver tagget når de kommer på lager:",
+        flags: 64,
+        components: [pickerRow(sets, selected)],
+      },
+    });
   }
 
   return res.status(400).send("unhandled interaction type");
