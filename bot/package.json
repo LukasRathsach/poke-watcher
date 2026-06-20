@@ -1,0 +1,8 @@
+{
+  "name": "poke-watcher-bot",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "discord-interactions": "^4.1.0"
+  }
+}
