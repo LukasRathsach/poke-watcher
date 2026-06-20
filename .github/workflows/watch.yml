@@ -2,17 +2,18 @@ name: poke-watcher
 
 on:
   schedule:
-    # every 5 min — GitHub's scheduled-cron floor (and often still delayed under load)
-    - cron: "*/5 * * * *"
+    # restart the loop every 30 min; the job itself polls every ~30s while it runs
+    - cron: "*/30 * * * *"
   workflow_dispatch: {}
 
 concurrency:
-  group: poke-watcher
+  group: poke-watcher       # only one loop at a time; a new trigger queues, never overlaps
   cancel-in-progress: false
 
 jobs:
   watch:
     runs-on: ubuntu-latest
+    timeout-minutes: 32      # > the loop's 28 min, so the "Save state" step still runs
     steps:
       - uses: actions/checkout@v4
 
@@ -22,7 +23,7 @@ jobs:
 
       - run: pip install requests pyyaml tzdata
 
-      # carry last-seen stock state across runs (subscriptions live in Supabase)
+      # last-seen stock state carries across loop restarts (subscriptions live in Supabase)
       - name: Restore state
         uses: actions/cache/restore@v4
         with:
@@ -30,12 +31,17 @@ jobs:
           key: pokewatcher-state-${{ github.run_id }}
           restore-keys: pokewatcher-state-
 
-      - name: Poll
+      - name: Poll loop (~28 min, every 30s)
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-        run: python watch.py
+        run: |
+          end=$((SECONDS + 28*60))
+          while [ $SECONDS -lt $end ]; do
+            python watch.py || true
+            sleep 30
+          done
 
       - name: Save state
         if: always()

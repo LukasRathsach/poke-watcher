@@ -1,41 +1,40 @@
 # Poké Watcher — setup
 
-Free, fully automatic Pokémon restock watcher. Checks Bilka, BR, Føtex and
-Bog & Idé every ~15 minutes and posts a Discord message the moment a product
-from a tracked set flips from out-of-stock to in-stock — with set, product,
-price, price-per-pack, direct link and time.
+Free, fully automatic Pokémon restock watcher. Polls Bilka, BR, Føtex and
+Bog & Idé roughly every 30 seconds and posts a Discord message the moment a
+product from a tracked set flips from out-of-stock to in-stock — with set,
+product, price, price-per-pack, physical-store count, direct link and time.
 
 ## How it runs — GitHub Actions (no laptop needed)
 
-The watcher runs in GitHub's cloud on a schedule (`.github/workflows/watch.yml`),
-so it works 24/7 without your Mac being on. Free.
+Runs in GitHub's cloud (`.github/workflows/watch.yml`), 24/7 without your Mac.
+Free (public repo = unlimited Actions minutes). It's a self-looping job: each run
+polls every ~30s for ~28 min, and a cron restarts it every 30 min — so coverage
+is effectively continuous.
 
 Already wired up:
-- Webhook stored as repo secret `DISCORD_WEBHOOK` (never in the code).
-- Stock state persists between runs via the Actions cache.
+- Webhook + Supabase keys stored as repo secrets (never in the code).
+- Stock state persists across loop restarts via the Actions cache.
 - Sets/keywords/retailers live in `config.example.yaml` (committed).
 
 **To change which sets it tracks:** edit `sets:` in `config.example.yaml`, commit, push.
 **To run it on demand:** repo → Actions → "poke-watcher" → Run workflow.
 **Logs:** repo → Actions → pick a run.
 
-> Note: GitHub cron can be delayed or skipped under load — expect "within ~15-30 min",
-> not to-the-second. Fine for restocks. Private-repo Actions minutes are limited
-> (2000/month free); a 15-min cron sits near that — make the repo public for
-> unlimited minutes if you ever run low.
+> ~30s is the polite/safe floor — polling the retailers' APIs harder risks getting
+> rate-limited or blocked. A drop that sells out in under ~30s can still be missed.
 
-## Discord commands (subscribe to a set, get @mentioned)
+## Discord slash commands (subscribe to a set, get @mentioned)
 
-Anyone in the channel can type (set name is free text):
+Instant — handled by a Vercel endpoint (`bot/api/interactions.js`), not the poll loop:
 
-- `tag mig: prismatic` (or `tag me prismatic`, `!track surging sparks`, `follow 151`)
-  — follow a set; you get @mentioned when a product from it restocks.
-- `stop tag: prismatic` (or `!untrack 151`) — unfollow.
-- `!sets` (or `!list`) — show what's currently followed.
+- `/track set:<navn>` — follow a set (autocomplete suggests available sets); you get
+  @mentioned when a product from it restocks. Following a set also starts tracking it.
+- `/untrack set:<navn>` — unfollow.
+- `/mysets` — what you follow. `/sets` — everything you can follow.
 
-Commands are read each cycle (~15 min), so a new subscription takes effect within
-~15 min. Following a set also makes the watcher start tracking it. Needs the bot
-secrets set: `DISCORD_BOT_TOKEN`, `DISCORD_CHANNEL_ID` (see bot setup).
+Subscriptions live in Supabase (`pokewatcher_*` tables, claude-invest project); the
+poll loop reads them each cycle to know who to @mention.
 
 ## Optional: also run locally via launchd
 
