@@ -75,6 +75,22 @@ export default async function handler(req, res) {
     return res.json({ type: InteractionResponseType.PONG });
   }
 
+  // "Vælg dine sæt" button on the pinned intro -> open the picker (ephemeral, per-user)
+  if (i.type === InteractionType.MESSAGE_COMPONENT && i.data.custom_id === "openpicker") {
+    const uid = userId(i);
+    const sets = await allSets();
+    if (!sets.length) return res.json(ephemeral("Ingen sæt registreret endnu."));
+    const selected = await userSets(uid);
+    return res.json({
+      type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+      data: {
+        content: "Vælg de sæt du vil følge — du bliver tagget når de kommer på lager:",
+        flags: 64,
+        components: [pickerRow(sets, selected)],
+      },
+    });
+  }
+
   // click-to-toggle: the dropdown submits the user's full selection -> set subs to match
   if (i.type === InteractionType.MESSAGE_COMPONENT && i.data.custom_id === "setpicker") {
     const uid = userId(i);
